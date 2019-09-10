@@ -1,5 +1,14 @@
 package com.sap.cloud.security.xsuaa.extractor;
 
+import com.sap.cloud.security.xsuaa.XsuaaServiceConfiguration;
+import com.sap.cloud.security.xsuaa.token.SpringSecurityContext;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.cache.Cache;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
+import org.springframework.util.StringUtils;
+
+import javax.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -7,16 +16,6 @@ import java.util.Base64;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Optional;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.springframework.cache.Cache;
-import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
-import org.springframework.util.StringUtils;
-
-import com.sap.cloud.security.xsuaa.XsuaaServiceConfiguration;
 
 /**
  * Analyse authentication header and obtain token from UAA
@@ -81,7 +80,9 @@ public class TokenBrokerResolver implements BearerTokenResolver {
 	@Override
 	public String resolve(HttpServletRequest request) {
 		try {
-			return extractToken(request);
+			String tokenValue = extractToken(request);
+			SpringSecurityContext.injectTokenIntoSecurityContext(tokenValue);
+			return tokenValue;
 		} catch (TokenBrokerException e) {
 			logger.warn("Error obtaining token:" + e.getMessage(), e);
 			return null;
